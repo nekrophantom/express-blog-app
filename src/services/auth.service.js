@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt'
-import { createUser, findUserBy } from "./user.service.js";
+import { createUser, findUserBy, findUserById } from "./user.service.js";
 import jwt from 'jsonwebtoken';
 
 export const registerUser = async ({ name, email, password }) => {
@@ -45,4 +45,28 @@ export const loginUser = async ({ email, password }) => {
         user: userWithoutPassword,
         token
     }
+}
+
+export async function getUserFromToken(token) {
+    if (!token) {
+        throw new Error("NOT_AUTHENTICATED");
+    }
+
+    let decoded;
+
+    try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+        throw new Error("TOKEN_INVALID");
+    }
+
+    const user = await findUserById({ id: decoded.id });
+
+    if (!user) {
+        throw new Error("USER_NOT_FOUND");
+    }
+
+    const { password, ...safeUser } = user;
+
+    return safeUser;
 }
